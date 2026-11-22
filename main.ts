@@ -67,7 +67,6 @@ const dossier = buildDossier(outDir, {
 const dossierPath = join(outDir, 'dossier.json');
 writeFileSync(dossierPath, dossier);
 chmodSync(dossierPath, 0o644);
-chmodSync(outDir, 0o755);
 
 const gameCount = countEntries(join(outDir, 'game'));
 console.log(
