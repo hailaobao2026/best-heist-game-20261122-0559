@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>午夜金库 MIDNIGHT VAULT — 潜行偷盗游戏</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #05080f; height: 100%; overflow: hidden; }
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    color: #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #stage { position: relative; width: 1280px; height: 720px; }
+  canvas { display: block; width: 1280px; height: 720px; background: #101a2e; }
+
+  /* 顶部 HUD 条 */
+  #hud {
+    position: absolute; top: 0; left: 0; right: 0; height: 64px;
+    display: flex; align-items: center; gap: 18px;
+    padding: 0 20px;
+    background: linear-gradient(180deg, rgba(5, 8, 15, 0.96), rgba(5, 8, 15, 0.82));
+    border-bottom: 1px solid rgba(201, 162, 39, 0.45);
+    font-size: 14px; z-index: 5;
+  }
+  #hud .title { font-family: Georgia, serif; font-size: 19px; color: #f5c542; letter-spacing: 2px; white-space: nowrap; }
+  #alarm-wrap { display: flex; align-items: center; gap: 8px; }
+  #alarm-text { font-weight: bold; white-space: nowrap; min-width: 64px; }
+  #alarm-bar { width: 210px; height: 14px; background: #1e293b; border: 1px solid #475569; border-radius: 7px; overflow: hidden; }
+  #alarm-fill { height: 100%; width: 0%; background: #22c55e; transition: width 0.12s linear; }
+  #objective { color: #bae6fd; white-space: nowrap; }
+  #loot-count { color: #fde68a; white-space: nowrap; }
+  .tool { background: #1e293b; border: 1px solid #475569; border-radius: 6px; padding: 4px 9px; white-space: nowrap; }
+  #timer { font-family: Georgia, serif; font-size: 17px; color: #e2e8f0; margin-left: auto; }
+  #sneak-tag { color: #5eead4; font-weight: bold; visibility: hidden; }
+  #mute-tag { color: #94a3b8; font-size: 12px; white-space: nowrap; }
+
+  /* 全屏遮罩（开始 / 胜利 / 被抓 / 暂停） */
+  .screen {
+    position: absolute; inset: 0; z-index: 10;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: rgba(4, 7, 14, 0.72); text-align: center; padding: 40px;
+  }
+  .screen.hidden { display: none; }
+  .screen h1 {
+    font-family: Georgia, serif; font-size: 58px; letter-spacing: 8px;
+    color: #f5c542; text-shadow: 0 0 30px rgba(245, 197, 66, 0.45); margin-bottom: 6px;
+  }
+  .screen h2 { font-family: Georgia, serif; font-size: 34px; letter-spacing: 4px; color: #f5c542; margin-bottom: 14px; }
+  .screen .sub { font-size: 15px; color: #cbd5e1; line-height: 1.9; max-width: 640px; }
+  .screen .sub b { color: #fde68a; }
+  .screen .controls { margin-top: 18px; font-size: 13.5px; color: #94a3b8; line-height: 2; }
+  .screen .controls b { color: #e2e8f0; }
+  .screen button {
+    margin-top: 26px; padding: 13px 44px; font-size: 18px; letter-spacing: 4px;
+    font-family: Georgia, serif; color: #0f172a; background: #f5c542;
+    border: none; border-radius: 8px; cursor: pointer;
+  }
+  .screen button:hover { background: #fbbf24; }
+  .stats { margin-top: 16px; font-size: 17px; line-height: 2; color: #e2e8f0; }
+  .stats b { color: #f5c542; font-size: 20px; }
+  #screen-caught h2 { color: #f87171; }
+  #screen-caught { background: rgba(20, 4, 6, 0.78); }
+  .hint { margin-top: 14px; font-size: 12.5px; color: #64748b; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="game"></canvas>
+
+  <div id="hud">
+    <span class="title">午夜金库</span>
+    <div id="alarm-wrap">
+      <span id="alarm-text">报警 0</span>
+      <div id="alarm-bar"><div id="alarm-fill"></div></div>
+    </div>
+    <span id="objective">目标：偷走星蓝宝石</span>
+    <span id="loot-count">战利品 0/4 · ¥0</span>
+    <span class="tool" id="tool-smoke">烟雾 2</span>
+    <span class="tool" id="tool-emp">EMP 2</span>
+    <span class="tool" id="tool-coin">硬币 3</span>
+    <span id="sneak-tag">潜行中</span>
+    <span id="timer">00:00</span>
+    <span id="mute-tag">音效开 M</span>
+  </div>
+
+  <div class="screen" id="screen-start">
+    <h1>午夜金库</h1>
+    <div class="sub" style="font-family: Georgia, serif; letter-spacing: 6px; color: #7dd3fc;">MIDNIGHT VAULT</div>
+    <p class="sub" style="margin-top: 14px;">午夜零点，博物馆的灯一盏盏熄灭。<br>
+    穿过两名守卫的视线与扫动的摄像头，偷走展台上的<b>星蓝宝石</b>，<br>
+    顺手带走金条、现金与古董花瓶，再从出口悄悄溜走——<br>
+    别让报警条涨满，否则警铃一响，今晚就到此为止。</p>
+    <div class="controls">
+      <b>WASD / 方向键</b> 移动　<b>Shift</b> 潜行（慢，但更难被发现）<br>
+      <b>Space</b> 烟雾弹（3 秒内视锥失效）　<b>E</b> EMP（摄像头停 5 秒）　<b>鼠标点击</b> 投硬币引开守卫<br>
+      <b>P</b> 暂停　<b>R</b> 重开　<b>M</b> 静音
+    </div>
+    <button id="btn-start">开始潜入</button>
+    <div class="hint">展柜、立柱与花坛能挡住视线——视锥照不到的地方，就是你的路。</div>
+  </div>
+
+  <div class="screen hidden" id="screen-win">
+    <h2 id="win-title">逃脱成功！</h2>
+    <p class="sub">星蓝宝石到手，天亮之前，你已经消失在夜色里。</p>
+    <div class="stats">
+      用时 <b id="win-time">00:00</b><br>
+      战利品 <b id="win-loot">¥0</b>　时间奖励 <b id="win-bonus">¥0</b><br>
+      总分 <b id="win-total">¥0</b>
+    </div>
+    <button id="btn-again-win">再干一票</button>
+    <div class="hint">按 R 或 Enter 也可以重开。</div>
+  </div>
+
+  <div class="screen hidden" id="screen-caught">
+    <h2>被抓住了！</h2>
+    <p class="sub">警铃大作，守卫从四面围了上来。<br>这次行动失败了——但金库还在那里。</p>
+    <div class="stats">
+      坚持了 <b id="caught-time">00:00</b><br>
+      已到手战利品 <b id="caught-loot">¥0</b>
+    </div>
+    <button id="btn-again-caught">再试一次</button>
+    <div class="hint">按 R 或 Enter 也可以重开。试试潜行 + 烟雾 + 硬币的组合。</div>
+  </div>
+
+  <div class="screen hidden" id="screen-pause">
+    <h2>已暂停</h2>
+    <p class="sub">金库的时间静止了。按 P 继续。</p>
+  </div>
+</div>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
