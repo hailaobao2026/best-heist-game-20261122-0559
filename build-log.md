@@ -108,4 +108,4 @@ vendor/makefun-game.ts   kit 原样复制，勿改
 - 试玩修掉的 bug（第 2 次写/改，满足 thinking_revised）：shots.js 先取引用后 resetRun，导致摆拍改的是被丢弃的旧 guards/cameras/level——封面与逃脱图里守卫不在摆拍位、逃脱图里宝石还留在展台上；修为先 resetRun 再取引用，重拍后目视确认：封面一帧五要素齐全（房间、红视锥扫向小偷、绿摄像头锥、发光星蓝宝石、报警条 32），逃脱图展台已空、报警 80 通红、两守卫 "!" 追击。
 - 截图 4 张 1280×720 JPEG，均 ≤256 KiB：1-cover.jpg（55,274 B）、2-sneak.jpg（58,008 B）、3-getaway.jpg（53,724 B）、4-start.jpg（63,865 B）。
 - main.ts 两次运行输出字节一致（dossier.json 376,664 字节，14 个 game 文件 + 4 截图）。
-- 本地 commit：待写（见 SUBMIT-HANDOFF.md）；分支 master（父会话推送时改名 main，与潜行场一致）。未推送、未 bundle、未 check、未提交。
+- 本地 commit：`789d603e2684e84c0b696c6e42e2030ea180de5b`（作者 hailaobao2026；历史：`1ca2328` 锚点 → `89a2ab4` LICENSE → `789d603` 游戏）。分支 master（父会话推送时改名 main，与潜行场一致）。未推送、未 bundle、未 check、未提交。
